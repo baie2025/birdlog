@@ -301,7 +301,21 @@ async function boot() {
   notify();
 }
 
-window.addEventListener('popstate', () => { if (S.viewer) closeViewer(true); });
+// 手机键盘弹出时可见区域会变小、还可能被系统往上推。把可见区域的位置和高度记成样式变量，
+// 对话框据此只占键盘上方的部分，输入框就不会被顶出屏幕。
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const track = () => {
+    const st = document.documentElement.style;
+    st.setProperty('--vvt', vv.offsetTop + 'px');
+    st.setProperty('--vvh', vv.height + 'px');
+  };
+  vv.addEventListener('resize', track);
+  vv.addEventListener('scroll', track);
+  track();
+}
+
+window.addEventListener('popstate',() => { if (S.viewer) closeViewer(true); });
 window.addEventListener('online', () => sync());
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') syncIfStale();

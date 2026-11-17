@@ -17,7 +17,9 @@ export function Page({ title, sub, back, tools, children }) {
   return html`<div class="page">
     <header class="page-h">
       <div class="page-title">
-        ${back ? html`<a class="iconbtn back" href=${back} aria-label="返回"><${Icon} name="left" /></a>` : null}
+        ${back === 'history'
+          ? html`<button type="button" class="iconbtn back" onClick=${() => (history.length > 1 ? history.back() : (location.hash = '#/'))} aria-label="返回"><${Icon} name="left" /></button>`
+          : back ? html`<a class="iconbtn back" href=${back} aria-label="返回"><${Icon} name="left" /></a>` : null}
         <div class="page-title-text">
           <h1>${title}</h1>
           ${sub ? html`<div class="page-sub">${sub}</div>` : null}
@@ -87,7 +89,7 @@ function Sections({ groups, sel, caption, mode = 'photos' }) {
         return html`<${Tile} key=${key} photo=${face} label=${caption(face)} muted=${!face.sp}
           badge=${ps.length > 1 ? html`<${Icon} name="stack" size=${12} /> ${ps.length} 张` : null}
           selecting=${sel.active} selected=${all}
-          onClick=${() => (sel.active ? sel.setMany(ids, !all) : openViewer(ids, 0))} />`;
+          onClick=${() => { if (sel.active) sel.setMany(ids, !all); else location.hash = '#/set/' + encodeURIComponent(g.key + '~' + key); }} />`;
       });
     } else {
       tiles = g.photos.map((p) => html`<${Tile} key=${p.id} photo=${p} label=${caption(p)} muted=${!p.sp}
@@ -196,6 +198,31 @@ export function TimelineView({ route }) {
     ${photos.length
       ? html`<${Sections} groups=${groups} sel=${sel} caption=${capSpecies} mode=${mode} />`
       : html`<${Empty} icon="search" title="没有符合条件的照片" />`}
+    <${BatchBar} sel=${sel} />
+  <//>`;
+}
+
+/** 合集页：某一天里某一种鸟的全部照片，像打开一个文件夹 */
+export function CollectionView({ route }) {
+  useStore(() => S.dbv);
+  const ix = index();
+  const cut = route.id.indexOf('~');
+  const dayKey = cut >= 0 ? route.id.slice(0, cut) : route.id;
+  const sp = cut >= 0 ? route.id.slice(cut + 1) : '';
+  const date = dayKey === 'none' ? '' : dayKey;
+  const sel = useSelection();
+  const photos = useMemo(() => (ix.byDate.get(date) || []).filter((p) => (p.sp || '') === sp), [ix, date, sp]);
+  const groups = useMemo(() => [{ key: 'all', title: '', sub: '', photos }], [photos]);
+  const t = taxon(sp);
+  const title = sp ? (t ? t.zh || t.en : sp) : '未识别';
+  if (!photos.length) {
+    return html`<${Page} title=${title} back="history"><${Empty} title="这个合集里已经没有照片了"><a class="btn" href="#/">回到时间线</a><//><//>`;
+  }
+  const sub = html`${t && t.zh ? t.en + ' · ' : ''}${fmtDate(date)}${placesText(photos) ? ' · ' + placesText(photos) : ''} · ${photos.length} 张`;
+  return html`<${Page} title=${title} back="history" sub=${sub} tools=${html`
+      ${sp ? html`<a class="btn" href=${'#/sp/' + encodeURIComponent(groupCode(sp))}><${Icon} name="bird" size=${16} />这个鸟种的全部照片</a>` : null}
+      <${SelectButton} sel=${sel} />`}>
+    <${Sections} groups=${groups} sel=${sel} caption=${capPlaceTime} />
     <${BatchBar} sel=${sel} />
   <//>`;
 }

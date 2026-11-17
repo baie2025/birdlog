@@ -5,7 +5,7 @@ import { S, notify, startBackend, savedKind, sync, syncIfStale, reconnect, close
 import { loadTaxonomy } from './taxonomy.js';
 import { DriveBackend, preloadGoogle } from './backend-drive.js';
 import { LocalBackend } from './backend-local.js';
-import { TimelineView, SpeciesView, SpeciesDetailView, PlacesView, PlaceDetailView, MoreView, countSpecies } from './views.js';
+import { TimelineView, SpeciesView, SpeciesDetailView, PlacesView, PlaceDetailView, MoreView, CollectionView, countSpecies } from './views.js';
 import { ImportView } from './import-view.js';
 import { Viewer } from './viewer.js';
 import { I, addFiles, queueStats, uploadBusy } from './importer.js';
@@ -70,7 +70,7 @@ const NAV = [
   ['places', '#/places', '地点', 'pin'],
   ['more', '#/more', '更多', 'more'],
 ];
-const sectionOf = (name) => ({ sp: 'species', place: 'places' }[name] || name);
+const sectionOf = (name) => ({ sp: 'species', place: 'places', set: 'timeline' }[name] || name);
 
 function Summary() {
   useStore(() => S.dbv);
@@ -255,6 +255,7 @@ function App() {
     case 'sp': view = html`<${SpeciesDetailView} key=${route.id} route=${route} />`; break;
     case 'places': view = html`<${PlacesView} />`; break;
     case 'place': view = html`<${PlaceDetailView} key=${route.id} route=${route} />`; break;
+    case 'set': view = html`<${CollectionView} key=${route.id} route=${route} />`; break;
     case 'import': view = html`<${ImportView} />`; break;
     case 'more': view = html`<${MoreView} />`; break;
     default: view = html`<${TimelineView} key=${route.params.get('unk') || ''} route=${route} />`;

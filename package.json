@@ -1,0 +1,11 @@
+{
+  "name": "birdlog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "自用观鸟照片记录：原图存 Google Drive，按日期、地点、鸟种浏览",
+  "scripts": {
+    "start": "node tools/serve.js",
+    "taxonomy": "node tools/build-taxonomy.js"
+  }
+}

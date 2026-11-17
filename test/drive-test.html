@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>BirdLog Drive 逻辑自测</title>
+<style>
+  body { font: 14px/1.6 system-ui, "Microsoft YaHei", sans-serif; padding: 20px; max-width: 900px; }
+  .ok { color: #2f6b4f; } .fail { color: #b3261e; font-weight: 600; } pre { white-space: pre-wrap; background: #f3f3f0; padding: 10px; }
+</style>
+</head>
+<body>
+<h1>BirdLog Drive 逻辑自测（模拟的 Drive）</h1>
+<p>请用单独的端口打开这个页面（比如 5174），这样测试数据不会混进正式使用的浏览器存储里。</p>
+<div id="out">运行中…</div>
+<script>window.BIRDLOG_CONFIG = { googleClientId: 'test-client-id' };</script>
+<script type="module" src="./drive-test.js"></script>
+</body>
+</html>

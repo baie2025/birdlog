@@ -1,0 +1,3 @@
+# 文本文件在仓库和本地都统一用 LF 换行，Windows 上的 Git 就不会再提示 "LF will be replaced by CRLF"
+* text=auto eol=lf
+*.png binary

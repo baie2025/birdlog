@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#2f6b4f"/>
-  <path d="M222 360v66M276 352v74" stroke="#fffdf8" stroke-width="15" stroke-linecap="round"/>
-  <g fill="#fffdf8">
+  <rect width="512" height="512" rx="112" fill="#11999e"/>
+  <path d="M222 360v66M276 352v74" stroke="#ffffff" stroke-width="15" stroke-linecap="round"/>
+  <g fill="#ffffff">
     <path d="M186 300 58 356l40 44 122-44z"/>
     <ellipse cx="254" cy="286" rx="134" ry="92" transform="rotate(-24 254 286)"/>
     <circle cx="342" cy="196" r="66"/>
   </g>
-  <path d="M398 168l72 30-70 28z" fill="#f2b84b"/>
-  <path d="M160 300c34-66 116-88 178-50-18 70-110 104-178 50z" fill="#b9d8c6"/>
-  <circle cx="358" cy="186" r="12" fill="#1e3d2e"/>
+  <path d="M398 168l72 30-70 28z" fill="#40514e"/>
+  <path d="M160 300c34-66 116-88 178-50-18 70-110 104-178 50z" fill="#30e3ca"/>
+  <circle cx="358" cy="186" r="12" fill="#40514e"/>
 </svg>

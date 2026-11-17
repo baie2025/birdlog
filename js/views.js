@@ -79,13 +79,13 @@ function Sections({ groups, sel, caption, mode = 'photos' }) {
     let tiles;
     if (mode === 'records') {
       const recs = new Map();
-      for (const p of g.photos) push(recs, recKey(p), p);
+      for (const p of g.photos) push(recs, p.sp || '', p); // 同一天里同一种鸟并成一个合集
       tiles = [...recs.entries()].map(([key, ps]) => {
         const face = ps.find((p) => p.cover) || ps[0];
         const ids = ps.map((p) => p.id);
         const all = sel.active && ids.every((id) => sel.ids.has(id));
         return html`<${Tile} key=${key} photo=${face} label=${caption(face)} muted=${!face.sp}
-          badge=${ps.length > 1 ? html`<${Icon} name="stack" size=${12} /> ${ps.length}` : null}
+          badge=${ps.length > 1 ? html`<${Icon} name="stack" size=${12} /> ${ps.length} 张` : null}
           selecting=${sel.active} selected=${all}
           onClick=${() => (sel.active ? sel.setMany(ids, !all) : openViewer(ids, 0))} />`;
       });
@@ -155,7 +155,7 @@ export function TimelineView({ route }) {
   const [year, setYear] = useState('');
   const [unk, setUnk] = useState(route.params.get('unk') === '1');
   const [asc, setAsc] = useState(false);
-  const [mode, setMode] = usePref('timelineMode', 'photos');
+  const [mode, setMode] = usePref('timelineGroup', 'records');
   const sel = useSelection();
   const unkCount = (ix.byGroup.get('') || []).length;
 
@@ -187,10 +187,10 @@ export function TimelineView({ route }) {
         ${ix.years.map((y) => html`<option value=${y}>${y} 年</option>`)}
       </select>
       ${unkCount || unk ? html`<button type="button" class=${'btn' + (unk ? ' on' : '')} onClick=${() => setUnk(!unk)}>未识别 ${unkCount}</button>` : null}
-      <button type="button" class="btn" onClick=${() => setMode(mode === 'records' ? 'photos' : 'records')}
-        title="同一天、同一地点、同一种鸟的照片叠成一格">
-        <${Icon} name="stack" size=${17} />${mode === 'records' ? '按记录' : '按照片'}
-      </button>
+      <div class="seg" role="group" aria-label="显示方式">
+        <button type="button" class=${mode === 'records' ? 'on' : ''} onClick=${() => setMode('records')} title="同一天里同一种鸟的照片并成一个合集，点开看全部">按鸟种合并</button>
+        <button type="button" class=${mode === 'photos' ? 'on' : ''} onClick=${() => setMode('photos')}>全部照片</button>
+      </div>
       <button type="button" class="btn" onClick=${() => setAsc(!asc)}><${Icon} name="sort" size=${17} />${asc ? '从旧到新' : '从新到旧'}</button>
       <${SelectButton} sel=${sel} />`}>
     ${photos.length

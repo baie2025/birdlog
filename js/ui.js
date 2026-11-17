@@ -249,6 +249,30 @@ function parseCoord(text) {
   return { lat, lng };
 }
 
+/**
+ * 在地图数据里搜地名（公园、保护区、城镇…）。用的是 Photon，一个基于 OpenStreetMap 的免费地名搜索服务，
+ * 不需要账号。只会把输入的文字（以及照片自带的位置，用来把附近的结果排前面）发给它。
+ */
+async function searchPlaces(q, gps, signal) {
+  let url = 'https://photon.komoot.io/api/?limit=8&lang=en&q=' + encodeURIComponent(q);
+  if (gps) url += `&lat=${gps.lat.toFixed(3)}&lon=${gps.lng.toFixed(3)}`;
+  const r = await fetch(url, { signal });
+  if (!r.ok) throw new Error('地名搜索失败');
+  const seen = new Set();
+  const out = [];
+  for (const f of (await r.json()).features || []) {
+    const p = f.properties || {};
+    const c = f.geometry && f.geometry.coordinates;
+    if (!p.name || !c) continue;
+    const where = [p.city || p.county, p.state, p.country].filter((x) => x && x !== p.name).join(', ');
+    const key = p.name + '|' + where;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ name: p.name, where, lat: c[1], lng: c[0] });
+  }
+  return out;
+}
+
 /** 选地点。gps 是所选照片自带的位置（有的话），用来按距离排序和给新地点填坐标。 */
 export function LocationPicker({ current, gps, count, close }) {
   const [q, setQ] = useState('');
@@ -273,6 +297,25 @@ export function LocationPicker({ current, gps, count, close }) {
     });
     return shown;
   }, [q, ix]);
+  // 输入停顿一下之后，再去地图数据里搜
+  const [found, setFound] = useState({ q: '', list: [], state: 'idle' });
+  useEffect(() => {
+    const text = q.trim();
+    if (text.length < 3) { setFound({ q: '', list: [], state: 'idle' }); return undefined; }
+    const ctl = new AbortController();
+    const timer = setTimeout(() => {
+      setFound((f) => ({ ...f, state: 'loading' }));
+      searchPlaces(text, gps, ctl.signal).then(
+        (list) => setFound({ q: text, list, state: 'done' }),
+        (e) => { if (e.name !== 'AbortError') setFound({ q: text, list: [], state: 'error' }); },
+      );
+    }, 450);
+    return () => { clearTimeout(timer); ctl.abort(); };
+  }, [q]);
+  const pickFound = (r) => {
+    const same = ix.locs.find((l) => l.name.toLowerCase() === r.name.toLowerCase());
+    close(same ? same.id : saveLocation({ name: r.name, lat: r.lat, lng: r.lng }));
+  };
   const name = q.trim();
   const exact = name && ix.locs.some((l) => l.name.toLowerCase() === name.toLowerCase());
   const create = () => {
@@ -286,7 +329,7 @@ export function LocationPicker({ current, gps, count, close }) {
       <${Icon} name="pin" size=${18} />
       <input ref=${inputRef} type="text" value=${q} onInput=${(e) => setQ(e.target.value)}
         onKeyDown=${(e) => { if (e.key === 'Enter' && name) { e.preventDefault(); if (!exact) create(); else close(ix.locs.find((l) => l.name.toLowerCase() === name.toLowerCase()).id); } }}
-        placeholder="搜索已有地点，或输入新地点的名字" autocomplete="off" />
+        placeholder="搜索地点，或输入新地点的名字" autocomplete="off" />
     </div>
     ${gps ? html`<p class="hint">照片自带位置 ${fmtCoord(gps.lat, gps.lng)}，已按距离排序。</p>` : null}
     <ul class="picklist">
@@ -303,7 +346,20 @@ export function LocationPicker({ current, gps, count, close }) {
         </button>
       </li>`)}
     </ul>
-    ${!rows.length && !name ? html`<p class="hint">还没有地点。输入名字就能新建，比如公园或保护区的名字。</p>` : null}
+    ${!rows.length && !name ? html`<p class="hint">还没有地点。输入名字就能新建，也可以从地图搜索结果里选，比如公园或保护区的名字。</p>` : null}
+    ${name.length >= 3 ? html`
+      <div class="picklist-h">地图上的地点${found.state === 'loading' ? '（正在搜索…）' : ''}</div>
+      ${found.state === 'error' ? html`<p class="hint">地名搜索暂时连不上，可以直接用上面的「新建地点」。</p>` : null}
+      ${found.state === 'done' && !found.list.length ? html`<p class="hint">地图里没有找到「${found.q}」。</p>` : null}
+      <ul class="picklist">
+        ${found.list.map((r) => html`<li key=${r.name + r.lat}>
+          <button type="button" class="pickrow" onClick=${() => pickFound(r)}>
+            <span class="pickrow-main"><span class="zh">${r.name}</span></span>
+            <span class="pickrow-sub">${r.where}${gps ? ` · 距离照片位置 ${haversineKm(gps.lat, gps.lng, r.lat, r.lng).toFixed(1)} 公里` : ''}</span>
+          </button>
+        </li>`)}
+      </ul>
+      <p class="hint">地名来自 OpenStreetMap（通过 Photon 搜索）。选中后会连同坐标一起存成你的地点。</p>` : null}
   <//>`;
 }
 

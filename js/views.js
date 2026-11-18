@@ -75,6 +75,10 @@ function Sections({ groups, sel, caption, mode = 'photos' }) {
     for (const g of groups) for (const p of g.photos) { at.set(p.id, ids.length); ids.push(p.id); }
     return { ids, at };
   }, [groups]);
+  // 照片被改到别的日期、鸟种或地点、从这个页面移走以后，它的选中状态也要去掉，
+  // 否则看不见的照片还留在选择里，下次批量修改会被一起改掉
+  const keep = sel.keepOnly;
+  useEffect(() => { keep(new Set(flat.ids)); }, [flat]);
   return useMemo(() => groups.map((g) => {
     const gids = g.photos.map((p) => p.id);
     const allSel = sel.active && gids.every((id) => sel.ids.has(id));
@@ -109,7 +113,7 @@ function Sections({ groups, sel, caption, mode = 'photos' }) {
 }
 
 const capSpecies = (p) => spLabel(p.sp);
-const capPlaceTime = (p) => [fmtTime(p.t), locName(p.loc)].filter(Boolean).join(' · ') || ' ';
+const capPlace = (p) => locName(p.loc); // 没设地点的照片不显示文字条
 const capDate = (p) => (p.t ? p.t.slice(0, 10) : '未知日期');
 
 function groupByDate(photos, { asc = false, sub } = {}) {
@@ -195,9 +199,8 @@ export function TimelineView({ route }) {
       </div>
       <button type="button" class="btn" onClick=${() => setAsc(!asc)}><${Icon} name="sort" size=${17} />${asc ? '从旧到新' : '从新到旧'}</button>
       <${SelectButton} sel=${sel} />`}>
-    ${photos.length
-      ? html`<${Sections} groups=${groups} sel=${sel} caption=${capSpecies} mode=${mode} />`
-      : html`<${Empty} icon="search" title="没有符合条件的照片" />`}
+    <${Sections} groups=${groups} sel=${sel} caption=${capSpecies} mode=${mode} />
+    ${photos.length ? null : html`<${Empty} icon="search" title="没有符合条件的照片" />`}
     <${BatchBar} sel=${sel} />
   <//>`;
 }
@@ -222,7 +225,7 @@ export function CollectionView({ route }) {
   return html`<${Page} title=${title} back="history" sub=${sub} tools=${html`
       ${sp ? html`<a class="btn" href=${'#/sp/' + encodeURIComponent(groupCode(sp))}><${Icon} name="bird" size=${16} />这个鸟种的全部照片</a>` : null}
       <${SelectButton} sel=${sel} />`}>
-    <${Sections} groups=${groups} sel=${sel} caption=${capPlaceTime} />
+    <${Sections} groups=${groups} sel=${sel} caption=${capPlace} />
     <${BatchBar} sel=${sel} />
   <//>`;
 }
@@ -356,7 +359,7 @@ export function SpeciesDetailView({ route }) {
   const fam = family(t);
   const groups = useMemo(() => groupByDate(photos, { sub: (ps) => [placesText(ps), `${ps.length} 张`].filter(Boolean).join(' · ') }), [photos]);
   // 组里可能混有亚种，格子上标出具体是哪个
-  const caption = useMemo(() => (p) => (p.sp && p.sp !== code ? spLabel(p.sp) : capPlaceTime(p)), [code]);
+  const caption = useMemo(() => (p) => (p.sp && p.sp !== code ? spLabel(p.sp) : capPlace(p)), [code]);
 
   if (!photos.length) {
     return html`<${Page} title=${t ? t.zh || t.en : code || '鸟种'} back="#/species">
@@ -500,8 +503,9 @@ export function PlaceDetailView({ route }) {
       ${loc ? html`<button type="button" class="btn" onClick=${edit}><${Icon} name="edit" size=${16} />修改</button>` : null}
       ${loc && !photos.length ? html`<button type="button" class="btn danger-ghost" onClick=${remove}><${Icon} name="trash" size=${16} />删除</button>` : null}
       ${photos.length ? html`<${SelectButton} sel=${sel} />` : null}`}>
+    <${Sections} groups=${groups} sel=${sel} caption=${by === 'date' ? capSpecies : capDate} />
     ${photos.length
-      ? html`<${Sections} groups=${groups} sel=${sel} caption=${by === 'date' ? capSpecies : capDate} />`
+      ? null
       : html`<${Empty} icon="pin" title="这个地点下还没有照片" />`}
     <${BatchBar} sel=${sel} />
   <//>`;

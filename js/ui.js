@@ -486,6 +486,13 @@ export function useSelection() {
     toggle: (id) => setIds((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }),
     setMany: (list, on) => setIds((prev) => { const n = new Set(prev); for (const id of list) { if (on) n.add(id); else n.delete(id); } return n; }),
     clear: () => setIds(new Set()),
+    /** 只保留还在页面上的照片：改了鸟种、地点或日期后移出当前页面的照片，自动取消选中 */
+    keepOnly: (visible) => setIds((prev) => {
+      let changed = false;
+      const n = new Set();
+      for (const id of prev) { if (visible.has(id)) n.add(id); else changed = true; }
+      return changed ? n : prev;
+    }),
   };
 }
 
